@@ -117,7 +117,7 @@ D2A=1, (--val_m 1),
 T_D2A=10 (--stall 10), 
 T=1k (--T_max 1000), K=4 (--k 4)
 ```
-CUDA_VISIBLE_DEVICES=0,1,2,3 python run.py --eval_only --no_saving --no_tb --init_val_met random --val_size 10000 --val_batch_size 10000 --k 4 --problem tsp --val_dataset datasets/tsp_100.pkl --graph 100 --val_m 1 --stall 10 --T_max 1000 --load_path pre-trained/tsp100.pt
+python run.py --eval_only --no_saving --no_tb --init_val_met random --val_size 10000 --val_batch_size 10000 --k 4 --problem tsp --val_dataset datasets/tsp_100.pkl --graph 100 --val_m 1 --stall 10 --T_max 1000 --load_path pre-trained/tsp100.pt
 ```
 
 ### CVRP-100 Example
@@ -126,7 +126,7 @@ D2A=1, (--val_m 1),
 T_D2A=10 (--stall 10), 
 T=1k (--T_max 1000),  K=4 (--k 4)
 ```
-CUDA_VISIBLE_DEVICES=0,1,2,3 python run.py --eval_only --no_saving --no_tb --init_val_met random --val_size 10000 --val_batch_size 10000 --k 4 --problem cvrp --val_dataset datasets/cvrp_100.pkl --graph 100 --dummy_rate 0.2 --val_m 1 --stall 10 --T_max 1000 --load_path pre-trained/cvrp100.pt
+python run.py --eval_only --no_saving --no_tb --init_val_met random --val_size 10000 --val_batch_size 10000 --k 4 --problem cvrp --val_dataset datasets/cvrp_100.pkl --graph 100 --dummy_rate 0.2 --val_m 1 --stall 10 --T_max 1000 --load_path pre-trained/cvrp100.pt
 ```
 
 # Acknowledgements

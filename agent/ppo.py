@@ -312,8 +312,6 @@ def train(rank, problem, agent, val_dataset, tb_logger):
                         weights
                         )
             step += 1
-            if rank == 0:
-                pbar.set_postfix(geo_weight=f"{agent.actor.decoder.geo_weight.item():.4f}")
 
         pbar.close()
         # save new model after one epoch  
@@ -572,7 +570,9 @@ def train_batch(
                     log_to_tb_train(tb_logger, agent, Reward, ratios, bl_val_detached, total_cost, total_cost_wo_feasible, grad_norms, entropy, approx_kl_divergence,
                        reinforce_loss, baseline_loss, c_cost_logger, weights, logprobs, initial_cost, info, current_step + 1)
                     
-            if rank == 0: pbar.update(1)
+            if rank == 0:
+                pbar.update(1)
+                pbar.set_postfix(geo_weight=f"{agent.actor.decoder.geo_weight.item():.4f}")
         
         # end update
         memory.clear_memory()

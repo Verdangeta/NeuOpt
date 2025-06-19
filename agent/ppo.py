@@ -312,7 +312,9 @@ def train(rank, problem, agent, val_dataset, tb_logger):
                         weights
                         )
             step += 1
-            
+            if rank == 0:
+                pbar.set_postfix(geo_weight=f"{agent.actor.decoder.geo_weight.item():.4f}")
+
         pbar.close()
         # save new model after one epoch  
         if rank == 0 and not opts.distributed: 

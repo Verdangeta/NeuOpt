@@ -46,6 +46,7 @@ def log_to_tb_train(tb_logger, agent, Reward, ratios, bl_val_detached, total_cos
     tb_logger.log_value('train/init_cost', initial_cost.mean(), mini_step)
     tb_logger.log_value('train/c_cost_logger', c_cost_logger.item(), mini_step)
     tb_logger.log_value('train/weights', weights, mini_step)
+    tb_logger.log_value('train/geo_weight', agent.actor.decoder.geo_weight.item(), mini_step)
     tb_logger.log_value('train/entropy', entropy.mean().item(), mini_step)
     tb_logger.log_value('train/approx_kl_divergence', approx_kl_divergence.item(), mini_step)
     tb_logger.log_histogram('train/bl_val',bl_val_detached.cpu(),mini_step)

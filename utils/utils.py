@@ -67,3 +67,29 @@ def clip_grad_norms(param_groups, max_norm=math.inf):
     return grad_norms, grad_norms_clipped
 
 
+def masked_dist_matrix(edges: torch.Tensor, distmatrix: torch.Tensor) -> torch.Tensor:
+    """Return distance matrix containing only distances for edges in the tour.
+
+    Parameters
+    ----------
+    edges : torch.Tensor
+        Tensor of shape ``(bs, n)`` describing next node for each node.
+    distmatrix : torch.Tensor
+        Pairwise distance matrix of shape ``(bs, n, n)``.
+
+    Returns
+    -------
+    torch.Tensor
+        Matrix with distances for the edges in ``edges`` and ``inf`` elsewhere.
+    """
+    bs, n = edges.size()
+    device = distmatrix.device
+    masked = torch.full((bs, n, n), float('inf'), device=device)
+    idx = torch.arange(n, device=device)
+    masked[:, idx, idx] = 0
+    batch_idx = torch.arange(bs, device=device).unsqueeze(1).expand(bs, n)
+    masked[batch_idx, idx.unsqueeze(0).expand(bs, n), edges] = distmatrix[batch_idx, idx.unsqueeze(0).expand(bs, n), edges]
+    masked[batch_idx, edges, idx.unsqueeze(0).expand(bs, n)] = distmatrix[batch_idx, edges, idx.unsqueeze(0).expand(bs, n)]
+    return masked
+
+

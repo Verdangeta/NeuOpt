@@ -310,7 +310,8 @@ class kopt_Decoder(nn.Module):
             k = 5,
             with_RNN = True,
             with_feature3 = True,
-            simpleMDP = False
+            simpleMDP = False,
+            geo_weight=1.0
     ):
         super(kopt_Decoder, self).__init__()
         self.n_heads = n_heads
@@ -321,6 +322,7 @@ class kopt_Decoder(nn.Module):
         self.with_RNN = with_RNN
         self.with_feature3 = with_feature3
         self.simpleMDP = simpleMDP
+        self.geo_weight = nn.Parameter(torch.tensor(float(geo_weight)))
         print('simpleMDP: ', self.simpleMDP)
         assert simpleMDP
         
@@ -359,7 +361,7 @@ class kopt_Decoder(nn.Module):
             stdv = 1. / math.sqrt(param.size(-1))
             param.data.uniform_(-stdv, stdv)
             
-    def forward(self, problem, h, rec, context2, visited_time, last_action, fixed_action = None, require_entropy = False):    
+    def forward(self, problem, h, rec, context2, visited_time, last_action, edge_len=None, fixed_action = None, require_entropy = False):
          
           bs, gs, _, ll, action, entropys = *h.size(), 0.0, None, []
           action_index = torch.zeros(bs, problem.k_max, dtype=torch.long).to(rec.device)
@@ -396,14 +398,25 @@ class kopt_Decoder(nn.Module):
                   q2 = input_q2
 
               # Dual-Stream Attention
-              result = (linear_V1.unsqueeze(1) * torch.tanh(self.linear_K1(h) + 
-                                                    self.linear_Q1(q1).unsqueeze(1) +
-                                                    self.linear_K3(h) * self.linear_Q3(q1).unsqueeze(1)
-                                                    )).sum(-1)      # \mu stream       
-              result+= (linear_V2.unsqueeze(1) * torch.tanh(self.linear_K2(h) + 
-                                                    self.linear_Q2(q2).unsqueeze(1) + 
-                                                    self.linear_K4(h) * self.linear_Q4(q2).unsqueeze(1)
-                                                    )).sum(-1)      # \lambda stream 
+                  mu_term = (linear_V1.unsqueeze(1) * torch.tanh(self.linear_K1(h) +
+                          self.linear_Q1(q1).unsqueeze(1) +
+                          self.linear_K3(h) * self.linear_Q3(q1).unsqueeze(1)
+                          )).sum(-1)      # \mu stream
+                  lambda_term = (linear_V2.unsqueeze(1) * torch.tanh(self.linear_K2(h) +
+                          self.linear_Q2(q2).unsqueeze(1) +
+                          self.linear_K4(h) * self.linear_Q4(q2).unsqueeze(1)
+                          )).sum(-1)      # \lambda stream
+                  result = mu_term + lambda_term
+                  if edge_len is not None:
+                    if i == 0 and isinstance(last_action, torch.Tensor):
+                        curr_idx = last_action[:,0]
+                    elif i > 0:
+                        curr_idx = action_index[:, i-1]
+                    else:
+                        curr_idx = None
+                    if curr_idx is not None:
+                        curr_dist = edge_len.gather(1, curr_idx.view(bs,1,1).expand(bs,1,gs)).squeeze(1)
+                        result = result + self.geo_weight * curr_dist
               
               # Calc probs
               logits = torch.tanh(result) * self.range

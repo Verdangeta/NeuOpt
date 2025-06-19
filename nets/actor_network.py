@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from nets.graph_layers import MultiHeadEncoder, EmbeddingNet, MultiHeadPosCompat, kopt_Decoder
+from utils import masked_dist_matrix
 
 class mySequential(nn.Sequential):
     def forward(self, *inputs):
@@ -92,6 +93,7 @@ class Actor(nn.Module):
         bs, gs, in_d = x_in.size()
         coords = batch['coordinates']
         edge_len = torch.cdist(coords, coords, p=2)
+        tour_edge_len = masked_dist_matrix(solution, edge_len)
         
         if problem.NAME == 'cvrp':
             

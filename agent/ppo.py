@@ -58,7 +58,8 @@ class PPO:
             with_RNN = not opts.wo_RNN,
             with_feature1 = not opts.wo_feature1,
             with_feature3 = not opts.wo_feature3,
-            with_simpleMDP = opts.wo_MDP
+            with_simpleMDP = opts.wo_MDP,
+            with_RTDL = not opts.wo_RTDL
         )
         
         if not opts.eval_only:

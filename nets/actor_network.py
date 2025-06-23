@@ -28,7 +28,8 @@ class Actor(nn.Module):
                  with_RNN,
                  with_feature1,
                  with_feature3,
-                 with_simpleMDP
+                 with_simpleMDP,
+                 with_RTDL
                  ):
         super(Actor, self).__init__()
 
@@ -45,6 +46,7 @@ class Actor(nn.Module):
         self.with_feature1 = with_feature1
         self.with_feature3 = with_feature3
         self.with_simpleMDP = with_simpleMDP
+        self.with_RTDL = with_RTDL
         
         if problem_name == 'tsp':
             self.node_dim = 2
@@ -95,10 +97,12 @@ class Actor(nn.Module):
         coords = batch['coordinates']
         edge_len = torch.cdist(coords, coords, p=2)
         tour_edge_len = masked_dist_matrix(solution, edge_len)
-        rtdl_features = torch.zeros_like(tour_edge_len)
+        rtdl_features = None
 
-        for i in range(len(edge_len)):
-            _, _, rtdl_features[i] = RTD_Lite(edge_len[i], tour_edge_len[i])()
+        if self.with_RTDL:
+            rtdl_features = torch.zeros_like(tour_edge_len)
+            for i in range(len(edge_len)):
+                _, _, rtdl_features[i] = RTD_Lite(edge_len[i], tour_edge_len[i])()
         
         if problem.NAME == 'cvrp':
             

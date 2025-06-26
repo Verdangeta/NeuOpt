@@ -1,8 +1,14 @@
+import os
 import torch
 from torch import nn
+import torch.multiprocessing as mp
 from nets.graph_layers import MultiHeadEncoder, EmbeddingNet, MultiHeadPosCompat, kopt_Decoder
 from utils import masked_dist_matrix
 from RTD_Lite_TSP import RTD_Lite
+
+def _run_rtd_lite(args):
+    edge, tour = args
+    return RTD_Lite(edge, tour)()[2]
 
 class mySequential(nn.Sequential):
     def forward(self, *inputs):
@@ -101,8 +107,12 @@ class Actor(nn.Module):
 
         if self.with_RTDL:
             rtdl_features = torch.zeros_like(tour_edge_len)
-            for i in range(len(edge_len)):
-                _, _, rtdl_features[i] = RTD_Lite(edge_len[i], tour_edge_len[i])()
+            ctx = mp.get_context("spawn")
+            with ctx.Pool(processes=min(len(edge_len), os.cpu_count())) as pool:
+                results = pool.map(_run_rtd_lite,
+                                   [(edge_len[i], tour_edge_len[i]) for i in range(len(edge_len))])
+            for i, feat in enumerate(results):
+                rtdl_features[i] = feat
         
         if problem.NAME == 'cvrp':
             

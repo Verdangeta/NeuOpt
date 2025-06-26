@@ -30,6 +30,7 @@ def get_options(args=None):
     parser.add_argument('--wo_feature1', action='store_true') # to remove VI featrues
     parser.add_argument('--wo_feature3', action='store_true')  # to remove ES featrues
     parser.add_argument('--wo_RTDL', action='store_true', help='Disable RTDL additional feature')
+    parser.add_argument('--update_RTD', type=int, default=1, help='Steps between RTDL weight updates')
     parser.add_argument('--wo_MDP', action='store_true', default=True) # always True (disabled function)
     
     ### resume and load models

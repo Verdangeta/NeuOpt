@@ -91,29 +91,31 @@ class Actor(nn.Module):
                                     )
 
         print('# params in Actor', self.get_parameter_number())
-        
+
     def get_parameter_number(self):
         total_num = sum(p.numel() for p in self.parameters())
         trainable_num = sum(p.numel() for p in self.parameters() if p.requires_grad)
         return {'Total': total_num, 'Trainable': trainable_num}
 
-    def forward(self, problem, batch, x_in, solution, context, context2,last_action, fixed_action = None, require_entropy = False, to_critic = False, only_critic  = False):
-        # the embedded input x
-        bs, gs, in_d = x_in.size()
+    def compute_rtdl_features(self, batch, solution):
         coords = batch['coordinates']
         edge_len = torch.cdist(coords, coords, p=2)
         tour_edge_len = masked_dist_matrix(solution, edge_len)
-        rtdl_features = None
+        rtdl_features = torch.zeros_like(tour_edge_len)
+        ctx = mp.get_context("spawn")
+        with ctx.Pool(processes=min(len(edge_len), os.cpu_count())) as pool:
+            results = pool.map(_run_rtd_lite,
+                               [(edge_len[i], tour_edge_len[i]) for i in range(len(edge_len))])
+        for i, feat in enumerate(results):
+            rtdl_features[i] = feat
+        return rtdl_features
 
-        if self.with_RTDL:
-            rtdl_features = torch.zeros_like(tour_edge_len)
-            ctx = mp.get_context("spawn")
-            with ctx.Pool(processes=min(len(edge_len), os.cpu_count())) as pool:
-                results = pool.map(_run_rtd_lite,
-                                   [(edge_len[i], tour_edge_len[i]) for i in range(len(edge_len))])
-            for i, feat in enumerate(results):
-                rtdl_features[i] = feat
-        
+    def forward(self, problem, batch, x_in, solution, context, context2,last_action, fixed_action = None, require_entropy = False, to_critic = False, only_critic  = False, rtdl_features=None):
+        # the embedded input x
+        bs, gs, in_d = x_in.size()
+        if self.with_RTDL and rtdl_features is None:
+            rtdl_features = self.compute_rtdl_features(batch, solution)
+
         if problem.NAME == 'cvrp':
             
             visited_time, to_actor = problem.get_dynamic_feature(solution, batch, context)

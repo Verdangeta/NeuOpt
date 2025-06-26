@@ -24,10 +24,11 @@ class Memory:
         self.actions = []
         self.states = []
         self.logprobs = []
-        self.rewards = [] 
+        self.rewards = []
         self.obj = []
         self.context = []
         self.context2 = []
+        self.rtdl_features = []
         
     def clear_memory(self):
         del self.actions[:]
@@ -37,6 +38,7 @@ class Memory:
         del self.obj[:]
         del self.context[:]
         del self.context2[:]
+        del self.rtdl_features[:]
 
 class PPO:
     def __init__(self, problem, opts):
@@ -367,19 +369,24 @@ def train_batch(
     context2 = torch.zeros(bs,9).to(solution.device);context2[:,-1] = 1
     feasibility_history = torch.tensor(feasibility_history_base).view(-1,total_history).expand(bs, total_history).to(obj.device)
     action = None
-    
+
+    rtdl_features = None
+
     # CL stage
     agent.eval()
     problem.eval()
     for w in range(int(epoch // opts.warm_up)):
-        # get model output	
+        if agent.actor.with_RTDL and (rtdl_features is None or w % opts.update_RTD == 0):
+            rtdl_features = agent.actor.compute_rtdl_features(batch, solution)
+        # get model output
         action  = agent.actor(problem,
                               batch,
                               batch_feature,
                               solution,
                               context,
                               context2,
-                              action)[0]
+                              action,
+                              rtdl_features=rtdl_features)[0]
         # state transient
         solution, rewards, obj, feasibility_history, context, context2, info = problem.step(batch, solution, action, obj, feasibility_history, w, weights = 0)
         index = rewards[:,0] > 0.0
@@ -400,6 +407,7 @@ def train_batch(
     # sample trajectory
     t = 0
     memory = Memory()
+    rtdl_features = None
     while t < T:
         
         t_s = t
@@ -413,7 +421,11 @@ def train_batch(
         while t - t_s < n_step and not (t == T):          
             
             # pass actor
+            if agent.actor.with_RTDL and (rtdl_features is None or t % opts.update_RTD == 0):
+                rtdl_features = agent.actor.compute_rtdl_features(batch, solution)
+
             memory.states.append(solution.clone())
+            memory.rtdl_features.append(rtdl_features.clone() if rtdl_features is not None else None)
             if context is not None:
                 memory.context.append(tuple(t.clone() for t in context))
                 memory.context2.append(context2.clone())
@@ -429,7 +441,8 @@ def train_batch(
                                                                context2,
                                                                action,
                                                                require_entropy = True,
-                                                               to_critic = True)
+                                                               to_critic = True,
+                                                               rtdl_features=rtdl_features)
    
             memory.actions.append(action.clone())
             memory.logprobs.append(log_lh.clone())
@@ -497,7 +510,8 @@ def train_batch(
                                                                 last_action = memory.actions[tt],
                                                                 fixed_action = memory.actions[tt+1],
                                                                 require_entropy = True,# take same action
-                                                                to_critic = True)
+                                                                to_critic = True,
+                                                                rtdl_features=memory.rtdl_features[tt])
                     
                     assert (_ == memory.actions[tt+1]).all()
                     logprobs.append(log_p)
@@ -517,7 +531,17 @@ def train_batch(
             c_cost_logger = torch.tensor(0.) if weights == 0 else (torch.stack(memory.rewards)[:,:,1].mean()/weights*-1)
             
             # estimate return
-            new_to_critic = agent.actor(problem,batch,batch_feature,solution,context,context2,None,only_critic = True)
+            if agent.actor.with_RTDL and (rtdl_features is None or t % opts.update_RTD == 0):
+                rtdl_features = agent.actor.compute_rtdl_features(batch, solution)
+            new_to_critic = agent.actor(problem,
+                                       batch,
+                                       batch_feature,
+                                       solution,
+                                       context,
+                                       context2,
+                                       None,
+                                       only_critic = True,
+                                       rtdl_features=rtdl_features)
             R = agent.critic(new_to_critic, obj, context2)[0]
             for r in range(len(reward_reversed)):
                 R = R * gamma + reward_reversed[r]

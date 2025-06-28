@@ -152,13 +152,18 @@ class PPO:
         
         solution_history = [solutions.clone()]
         solution_best_history = [solution_best.clone()]
-        obj_history = [obj.clone()]        
+        obj_history = [obj.clone()]
         feasible_history_recorded = [feasibility_history[:,0]]
         action = None
         reward = []
         stall_cnt_ins = torch.zeros(bs * val_m).to(solution_best.device)
 
-        for t in tqdm(range(T), disable = self.opts.no_progress_bar or not show_bar, desc = 'rollout', bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}'):       
+        rtdl_features = None
+
+        for t in tqdm(range(T), disable = self.opts.no_progress_bar or not show_bar, desc = 'rollout', bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}'):
+
+            if self.actor.with_RTDL and (rtdl_features is None or t % self.opts.update_RTD == 0):
+                rtdl_features = self.actor.compute_rtdl_features(batch_aug_same, solutions)
 
             action = self.actor(problem,
                                 batch_aug_same,
@@ -166,7 +171,8 @@ class PPO:
                                 solutions,
                                 context,
                                 context2,
-                                action)[0]
+                                action,
+                                rtdl_features=rtdl_features)[0]
 
             solutions, rewards, obj, feasibility_history, context, context2, info = problem.step(batch_aug_same, 
                                                                                                 solutions,

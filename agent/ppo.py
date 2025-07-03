@@ -294,7 +294,7 @@ def train(rank, problem, agent, val_dataset, tb_logger):
         pbar = tqdm(total = (opts.K_epochs) * (opts.epoch_size // opts.batch_size) * (opts.T_train // opts.n_step) ,
                     disable = opts.no_progress_bar or rank!=0, desc = 'training',
                     bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}')
-
+ 
         for batch_id, batch in enumerate(training_dataloader):
             if batch_reward is None:
                 batch_reward = []
@@ -537,8 +537,8 @@ def train_batch(
             c_cost_logger = torch.tensor(0.) if weights == 0 else (torch.stack(memory.rewards)[:,:,1].mean()/weights*-1)
             
             # estimate return
-            if agent.actor.with_RTDL and (rtdl_features is None or t % opts.update_RTD == 0):
-                rtdl_features = agent.actor.compute_rtdl_features(batch, solution)
+            # if agent.actor.with_RTDL and (rtdl_features is None or t % opts.update_RTD == 0):
+            #     rtdl_features = agent.actor.compute_rtdl_features(batch, solution)
             new_to_critic = agent.actor(problem,
                                        batch,
                                        batch_feature,

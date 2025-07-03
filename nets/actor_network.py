@@ -102,10 +102,11 @@ class Actor(nn.Module):
         edge_len = torch.cdist(coords, coords, p=2)
         tour_edge_len = masked_dist_matrix(solution, edge_len)
         rtdl_features = torch.zeros_like(tour_edge_len)
-        ctx = mp.get_context("spawn")
-        with ctx.Pool(processes=min(len(edge_len), os.cpu_count())) as pool:
-            results = pool.map(_run_rtd_lite,
-                               [(edge_len[i], tour_edge_len[i]) for i in range(len(edge_len))])
+        # ctx = mp.get_context("spawn")
+        # with ctx.Pool(processes=min(len(edge_len), os.cpu_count())) as pool:
+            # results = pool.map(_run_rtd_lite,
+            #                    [(edge_len[i], tour_edge_len[i]) for i in range(len(edge_len))])
+        results = [_run_rtd_lite((edge_len[i], tour_edge_len[i])) for i in range(len(edge_len))]
         for i, feat in enumerate(results):
             rtdl_features[i] = feat
         return rtdl_features

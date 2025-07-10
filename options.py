@@ -39,6 +39,9 @@ def get_options(args=None):
     parser.add_argument('--epoch_start', type=int, default=0, help='Start at epoch # (relevant for learning rate decay)')
     
     ### training AND validation
+    # (opts.K_epochs) - K mini-epochs
+    # (opts.epoch_size // opts.batch_size) - Number of instances per epoch during training
+    # (opts.T_train // opts.n_step) - How many optimization cycles we will do, T_train - maximum steps for one instance, n_step - number of steps without updating parameters
     parser.add_argument('--K_epochs', type=int, default=3)
     parser.add_argument('--eps_clip', type=float, default=0.1)
     parser.add_argument('--T_train', type=int, default=200)

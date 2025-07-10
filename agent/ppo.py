@@ -290,6 +290,9 @@ def train(rank, problem, agent, val_dataset, tb_logger):
                                                        pin_memory=True)
             
         # start training
+        # (opts.K_epochs) - K mini-epochs
+        # (opts.epoch_size // opts.batch_size) - Number of instances per epoch during training
+        # (opts.T_train // opts.n_step) - How many optimization cycles we will do, T_train - maximum steps for one instance, n_step - number of steps without updating parameters
         step = epoch * (opts.epoch_size // opts.batch_size)  
         pbar = tqdm(total = (opts.K_epochs) * (opts.epoch_size // opts.batch_size) * (opts.T_train // opts.n_step) ,
                     disable = opts.no_progress_bar or rank!=0, desc = 'training',

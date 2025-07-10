@@ -409,15 +409,11 @@ class kopt_Decoder(nn.Module):
                       )).sum(-1)      # \lambda stream
               result = mu_term + lambda_term
               if edge_len is not None:
-                if i == 0 and isinstance(last_action, torch.Tensor):
-                    curr_idx = last_action[:,0]
-                elif i > 0:
-                    curr_idx = action_index[:, i-1]
-                else:
-                    curr_idx = None
-                if curr_idx is not None:
-                    curr_dist = edge_len.gather(1, curr_idx.view(bs,1,1).expand(bs,1,gs)).squeeze(1)
-                    result = result + self.geo_weight * curr_dist
+                  # Use weight of the RTDL edge leaving each candidate node in the current
+                  # solution instead of the edge entering it from the previously
+                  # selected node.
+                  curr_dist = edge_len.gather(2, rec.unsqueeze(-1)).squeeze(-1)
+                  result = result + self.geo_weight * curr_dist
               
               # Calc probs
               logits = torch.tanh(result) * self.range

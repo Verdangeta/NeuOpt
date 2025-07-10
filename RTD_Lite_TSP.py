@@ -100,18 +100,22 @@ class RTD_Lite:
         self.device = r1.device
 
         
-    def __call__(self):
+    def __call__(self, r1_mst=None):
         rmin = torch.minimum(self.r1, self.r2)
-        
+
         rmin_sum, rmin_edge_idx, rmin_edge_w = prim_algo(rmin.cpu())
-        r1_sum, r1_edge_idx, r1_edge_w = prim_algo(self.r1.cpu())
+        if r1_mst is None:
+            _, r1_edge_idx, r1_edge_w = prim_algo(self.r1.cpu())
+            r1_edge_idx = r1_edge_idx[r1_edge_w.argsort()]
+            r1_edge_w = r1_edge_w[r1_edge_w.argsort()]
+        else:
+            r1_edge_idx, r1_edge_w = r1_mst
         r2_sum, r2_edge_idx, r2_edge_w = prim_algo(self.r2.cpu())
 
         rmin_edge_idx = rmin_edge_idx[rmin_edge_w.argsort()]
         rmin_edge_w = rmin_edge_w[rmin_edge_w.argsort()]
                
-        r1_edge_idx = r1_edge_idx[r1_edge_w.argsort()]
-        r1_edge_w = r1_edge_w[r1_edge_w.argsort()]
+        # r1_edge_idx and r1_edge_w are already sorted when precomputed
         
         r2_edge_idx = r2_edge_idx[r2_edge_w.argsort()]
         r2_edge_w = r2_edge_w[r2_edge_w.argsort()]

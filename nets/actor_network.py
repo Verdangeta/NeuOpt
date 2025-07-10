@@ -4,11 +4,11 @@ from torch import nn
 import torch.multiprocessing as mp
 from nets.graph_layers import MultiHeadEncoder, EmbeddingNet, MultiHeadPosCompat, kopt_Decoder
 from utils import masked_dist_matrix
-from RTD_Lite_TSP import RTD_Lite
+from RTD_Lite_TSP import RTD_Lite, prim_algo
 
 def _run_rtd_lite(args):
-    edge, tour = args
-    return RTD_Lite(edge, tour)()[2]
+    edge, tour, mst = args
+    return RTD_Lite(edge, tour)(mst)[2]
 
 class mySequential(nn.Sequential):
     def forward(self, *inputs):
@@ -97,7 +97,18 @@ class Actor(nn.Module):
         trainable_num = sum(p.numel() for p in self.parameters() if p.requires_grad)
         return {'Total': total_num, 'Trainable': trainable_num}
 
-    def compute_rtdl_features(self, batch, solution):
+    def precompute_rtdl_mst(self, batch):
+        coords = batch['coordinates']
+        edge_len = torch.cdist(coords, coords, p=2)
+        mst_list = []
+        for i in range(len(edge_len)):
+            _, edge_idx, edge_w = prim_algo(edge_len[i].cpu())
+            edge_idx = edge_idx[edge_w.argsort()]
+            edge_w = edge_w[edge_w.argsort()]
+            mst_list.append((edge_idx, edge_w))
+        return mst_list
+
+    def compute_rtdl_features(self, batch, solution, mst_list=None):
         coords = batch['coordinates']
         edge_len = torch.cdist(coords, coords, p=2)
         tour_edge_len = masked_dist_matrix(solution, edge_len)
@@ -106,7 +117,7 @@ class Actor(nn.Module):
         # with ctx.Pool(processes=min(len(edge_len), os.cpu_count())) as pool:
             # results = pool.map(_run_rtd_lite,
             #                    [(edge_len[i], tour_edge_len[i]) for i in range(len(edge_len))])
-        results = [_run_rtd_lite((edge_len[i], tour_edge_len[i])) for i in range(len(edge_len))]
+        results = [_run_rtd_lite((edge_len[i], tour_edge_len[i], None if mst_list is None else mst_list[i])) for i in range(len(edge_len))]
         for i, feat in enumerate(results):
             rtdl_features[i] = feat
         return rtdl_features

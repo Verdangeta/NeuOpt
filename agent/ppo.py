@@ -159,11 +159,12 @@ class PPO:
         stall_cnt_ins = torch.zeros(bs * val_m).to(solution_best.device)
 
         rtdl_features = None
+        rtdl_mst = self.actor.precompute_rtdl_mst(batch_aug_same) if self.actor.with_RTDL else None
 
         for t in tqdm(range(T), disable = self.opts.no_progress_bar or not show_bar, desc = 'rollout', bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}'):
 
             if self.actor.with_RTDL and (rtdl_features is None or t % self.opts.update_RTD == 0):
-                rtdl_features = self.actor.compute_rtdl_features(batch_aug_same, solutions)
+                rtdl_features = self.actor.compute_rtdl_features(batch_aug_same, solutions, rtdl_mst)
 
             action = self.actor(problem,
                                 batch_aug_same,
@@ -380,13 +381,14 @@ def train_batch(
     action = None
 
     rtdl_features = None
+    rtdl_mst = agent.actor.precompute_rtdl_mst(batch) if agent.actor.with_RTDL else None
 
     # CL stage
     agent.eval()
     problem.eval()
     for w in range(int(epoch // opts.warm_up)):
         if agent.actor.with_RTDL and (rtdl_features is None or w % opts.update_RTD == 0):
-            rtdl_features = agent.actor.compute_rtdl_features(batch, solution)
+            rtdl_features = agent.actor.compute_rtdl_features(batch, solution, rtdl_mst)
         # get model output
         action  = agent.actor(problem,
                               batch,
@@ -431,7 +433,7 @@ def train_batch(
             
             # pass actor
             if agent.actor.with_RTDL and (rtdl_features is None or t % opts.update_RTD == 0):
-                rtdl_features = agent.actor.compute_rtdl_features(batch, solution)
+                rtdl_features = agent.actor.compute_rtdl_features(batch, solution, rtdl_mst)
 
             memory.states.append(solution.clone())
             memory.rtdl_features.append(rtdl_features.clone() if rtdl_features is not None else None)

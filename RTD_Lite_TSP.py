@@ -99,6 +99,10 @@ class RTD_Lite:
         self.r2 = dists_2
         self.device = r1.device
 
+        masked_r2 = torch.where(torch.isinf(self.r2), torch.tensor(float('-inf')), self.r2)
+        self.max_TSP_row_col = torch.unravel_index(torch.argmax(masked_r2), masked_r2.shape)
+        self.max_TSP_len = masked_r2[self.max_TSP_row_col[0], self.max_TSP_row_col[1]]
+
         
     def __call__(self, r1_mst=None):
         rmin = torch.minimum(self.r1, self.r2)
@@ -111,6 +115,11 @@ class RTD_Lite:
         else:
             r1_edge_idx, r1_edge_w = r1_mst
         r2_sum, r2_edge_idx, r2_edge_w = prim_algo(self.r2.cpu())
+
+        # Find the biggest MST edge and then drop all smaller adges from FULL Graph, then take this smalles out of the rest. (RTDL wieght for biggest TSP tour edge)
+        biggest_MST_edge_w = torch.max(r1_edge_w)
+        birth_biggest_TSP_edge = torch.min(self.r1[self.r1>biggest_MST_edge_w])
+        
 
         rmin_edge_idx = rmin_edge_idx[rmin_edge_w.argsort()]
         rmin_edge_w = rmin_edge_w[rmin_edge_w.argsort()]
@@ -163,6 +172,9 @@ class RTD_Lite:
         output = torch.zeros_like(self.r1).to(self.device)
         for index, (i, j) in enumerate(path_edges_from_barcodes):
             output[i, j] = barcodes['2->1'][index][1] - barcodes['2->1'][index][0]
+
+        output[self.max_TSP_row_col[0],self.max_TSP_row_col[1]] = self.max_TSP_len - birth_biggest_TSP_edge
+        assert self.max_TSP_len - birth_biggest_TSP_edge >= 0 , "Smth wrong with RTDL last weight"
         
         return barcodes, path_edges_from_barcodes , output
     

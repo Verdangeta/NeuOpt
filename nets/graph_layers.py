@@ -311,7 +311,7 @@ class kopt_Decoder(nn.Module):
             with_RNN = True,
             with_feature3 = True,
             simpleMDP = False,
-            geo_weight=1.0
+            geo_weight = 5.0
     ):
         super(kopt_Decoder, self).__init__()
         self.n_heads = n_heads
@@ -322,7 +322,8 @@ class kopt_Decoder(nn.Module):
         self.with_RNN = with_RNN
         self.with_feature3 = with_feature3
         self.simpleMDP = simpleMDP
-        self.geo_weight = nn.Parameter(torch.tensor(float(geo_weight)))
+        # self.geo_weight = nn.Parameter(torch.tensor(float(geo_weight)))
+        self.geo_weight = torch.tensor(geo_weight)
         print('simpleMDP: ', self.simpleMDP)
         assert simpleMDP
         
@@ -414,15 +415,17 @@ class kopt_Decoder(nn.Module):
                   # selected node.
                   curr_dist = edge_len.gather(2, rec.unsqueeze(-1)).squeeze(-1)
                   result = result + self.geo_weight * curr_dist
+                  # print("Sizes of vectors:","MU:",mu_term,"lambda:", lambda_term,"RTDL:", self.geo_weight * curr_dist, sep = "\n")
               
               # Calc probs
               logits = torch.tanh(result) * self.range
+              # print("Logits:", logits)
               # assert (~mask).any(-1).all(), (i, (~mask).any(-1))
               logits[mask.clone()] = -1e30
               if i == 0 and isinstance(last_action, torch.Tensor):
                   logits.scatter_(1, last_action[:,:1], -1e30)
               probs = F.softmax(logits, dim = -1)
-              
+              # print("probs:", probs)
               # Sample action for a_i
               if fixed_action is None:
                   action = probs.multinomial(1)
@@ -433,6 +436,8 @@ class kopt_Decoder(nn.Module):
                   
               if self.simpleMDP and i > 0:
                   action = torch.where(stopped.unsqueeze(-1), action_index[:,:1], action)
+              # print("action:", action)
+              # print("fixed_action:", fixed_action)
                   
               # Record log_likelihood and Entropy
               if self.training:

@@ -35,7 +35,8 @@ class Actor(nn.Module):
                  with_feature1,
                  with_feature3,
                  with_simpleMDP,
-                 with_RTDL
+                 with_RTDL,
+                 geo_weight=5.0
                  ):
         super(Actor, self).__init__()
 
@@ -80,14 +81,15 @@ class Actor(nn.Module):
                                 self.hidden_dim, 
                                 )
         
-        self.decoder = kopt_Decoder(self.n_heads_actor, 
-                                    input_dim = self.embedding_dim, 
+        self.decoder = kopt_Decoder(self.n_heads_actor,
+                                    input_dim = self.embedding_dim,
                                     embed_dim = self.embedding_dim,
                                     v_range = self.range,
                                     k = self.k,
                                     with_RNN = self.with_RNN,
                                     with_feature3 = self.with_feature3,
-                                    simpleMDP = self.with_simpleMDP
+                                    simpleMDP = self.with_simpleMDP,
+                                    geo_weight = geo_weight
                                     )
 
         print('# params in Actor', self.get_parameter_number())

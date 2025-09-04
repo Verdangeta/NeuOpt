@@ -3,7 +3,7 @@ import torch
 from torch import nn
 import torch.multiprocessing as mp
 from nets.graph_layers import MultiHeadEncoder, EmbeddingNet, MultiHeadPosCompat, kopt_Decoder
-from utils import masked_dist_matrix
+from utils import masked_dist_matrix, optimize_D_1tree
 from RTD_Lite_TSP import RTD_Lite, prim_algo
 
 def _run_rtd_lite(args):
@@ -36,7 +36,8 @@ class Actor(nn.Module):
                  with_feature3,
                  with_simpleMDP,
                  with_RTDL,
-                 geo_weight=5.0
+                 geo_weight=5.0,
+                 use_1tree_opt=False
                  ):
         super(Actor, self).__init__()
 
@@ -54,6 +55,7 @@ class Actor(nn.Module):
         self.with_feature3 = with_feature3
         self.with_simpleMDP = with_simpleMDP
         self.with_RTDL = with_RTDL
+        self.use_1tree_opt = use_1tree_opt
         
         if problem_name == 'tsp':
             self.node_dim = 2
@@ -104,9 +106,14 @@ class Actor(nn.Module):
         edge_len = torch.cdist(coords, coords, p=2)
         mst_list = []
         for i in range(len(edge_len)):
-            _, edge_idx, edge_w = prim_algo(edge_len[i].cpu())
-            edge_idx = edge_idx[edge_w.argsort()]
-            edge_w = edge_w[edge_w.argsort()]
+            dist = edge_len[i].cpu().numpy()
+            if self.use_1tree_opt:
+                _, dist = optimize_D_1tree(dist, lr=1e-3)
+            _, edge_idx, _ = prim_algo(torch.tensor(dist, dtype=torch.float32))
+            edge_w = edge_len[i][edge_idx[:, 0], edge_idx[:, 1]]
+            order = edge_w.argsort()
+            edge_idx = edge_idx[order.numpy()]
+            edge_w = edge_w[order]
             mst_list.append((edge_idx, edge_w))
         return mst_list
 

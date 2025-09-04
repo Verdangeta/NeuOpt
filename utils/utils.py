@@ -2,6 +2,9 @@ import torch
 import math
 import numpy as np
 import random
+from collections import Counter
+from scipy.sparse.csgraph import minimum_spanning_tree
+from scipy.sparse import coo_matrix
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 def get_rotate_mat(theta_f: float) -> torch.Tensor:
@@ -91,5 +94,64 @@ def masked_dist_matrix(edges: torch.Tensor, distmatrix: torch.Tensor) -> torch.T
     masked[batch_idx, idx.unsqueeze(0).expand(bs, n), edges] = distmatrix[batch_idx, idx.unsqueeze(0).expand(bs, n), edges]
     masked[batch_idx, edges, idx.unsqueeze(0).expand(bs, n)] = distmatrix[batch_idx, edges, idx.unsqueeze(0).expand(bs, n)]
     return masked
+
+
+def optimize_D_1tree(Din, lr, n_iter=10 ** 5):
+    """Optimize distance matrix for 1-tree construction.
+
+    Parameters
+    ----------
+    Din : np.ndarray
+        Initial distance matrix.
+    lr : float
+        Learning rate for optimization.
+    n_iter : int, optional
+        Maximum number of iterations.
+
+    Returns
+    -------
+    tuple
+        (best_cnt, best_D) where best_D is the optimized matrix.
+    """
+
+    D = np.array(Din, dtype=float)
+
+    best_cnt = float("inf")
+    best_D = D.copy()
+    best_iter = 0
+
+    for iter_num in range(n_iter):
+        D1 = D[1:, 1:]
+        xsorted = sorted(enumerate(D[0]), key=lambda x: x[1])
+
+        mst = minimum_spanning_tree(D1)
+        mst_coo = coo_matrix(mst)
+        m = np.mean(mst_coo.data)
+
+        c = Counter()
+        for i in range(mst_coo.nnz):
+            c[mst_coo.row[i] + 1] += 1
+            c[mst_coo.col[i] + 1] += 1
+
+        c[xsorted[1][0]] += 1
+        c[xsorted[2][0]] += 1
+
+        cnt_deg_neq_2 = len([x for x in c.values() if x != 2])
+
+        if cnt_deg_neq_2 < best_cnt:
+            best_cnt = cnt_deg_neq_2
+            best_D = D.copy()
+            best_iter = iter_num
+
+        if iter_num - best_iter > 100:
+            return best_cnt, best_D
+
+        for v, degree in c.items():
+            D[:, v] += lr * m * (degree - 2)
+            D[v, :] += lr * m * (degree - 2)
+
+        np.fill_diagonal(D, 0)
+
+    return best_cnt, best_D
 
 

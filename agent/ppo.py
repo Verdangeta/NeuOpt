@@ -62,7 +62,8 @@ class PPO:
             with_feature3 = not opts.wo_feature3,
             with_simpleMDP = opts.wo_MDP,
             with_RTDL = not opts.wo_RTDL,
-            geo_weight = opts.geo_weight
+            geo_weight = opts.geo_weight,
+            use_1tree_opt = opts.use_1tree_opt
         )
         
         if not opts.eval_only:

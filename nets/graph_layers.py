@@ -659,7 +659,8 @@ class EmbeddingNet(nn.Module):
             else:
                 x[:,i] = self.basesin(longer_pattern, Td, fai)[np.linspace(0, len(longer_pattern), n_position, dtype = 'int', endpoint = False)]
                 
-        pattern = torch.from_numpy(x).type(torch.FloatTensor)
+        # pattern = torch.from_numpy(x).type(torch.FloatTensor)
+        pattern = torch.from_numpy(np.asarray(x, dtype=np.float32))
         pattern_sum = torch.zeros_like(pattern)
 
         # averaging the adjacient embeddings if needed (optional, almost the same performance)

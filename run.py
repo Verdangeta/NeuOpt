@@ -4,7 +4,7 @@ import torch
 import pprint
 import numpy as np
 import random
-from tensorboard_logger import Logger as TbLogger
+from torch.utils.tensorboard import SummaryWriter as TbLogger
 import warnings
 from options import get_options
 

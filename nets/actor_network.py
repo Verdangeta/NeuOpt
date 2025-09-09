@@ -112,7 +112,7 @@ class Actor(nn.Module):
             _, edge_idx, _ = prim_algo(torch.tensor(dist, dtype=torch.float32))
             edge_w = edge_len[i][edge_idx[:, 0], edge_idx[:, 1]]
             order = edge_w.argsort()
-            edge_idx = edge_idx[order.numpy()]
+            edge_idx = edge_idx[order.cpu().numpy()]
             edge_w = edge_w[order]
             mst_list.append((edge_idx, edge_w))
         return mst_list

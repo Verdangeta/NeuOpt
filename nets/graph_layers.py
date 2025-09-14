@@ -312,7 +312,8 @@ class kopt_Decoder(nn.Module):
             with_feature3 = True,
             simpleMDP = False,
             geo_weight = 5.0,
-            normalize_curr_dist = True
+            normalize_curr_dist = True,
+            trainable_geo_weight = False
     ):
         super(kopt_Decoder, self).__init__()
         self.n_heads = n_heads
@@ -324,8 +325,10 @@ class kopt_Decoder(nn.Module):
         self.with_feature3 = with_feature3
         self.simpleMDP = simpleMDP
         self.normalize_curr_dist = normalize_curr_dist
-        # self.geo_weight = nn.Parameter(torch.tensor(float(geo_weight)))
-        self.geo_weight = torch.tensor(geo_weight)
+        if trainable_geo_weight:
+            self.geo_weight = nn.Parameter(torch.tensor(float(geo_weight)))
+        else:
+            self.register_buffer('geo_weight', torch.tensor(geo_weight))
         print('simpleMDP: ', self.simpleMDP)
         assert simpleMDP
         

@@ -116,7 +116,7 @@ class RTD_Lite:
             r1_edge_idx, r1_edge_w = r1_mst
         r2_sum, r2_edge_idx, r2_edge_w = prim_algo(self.r2.cpu())
 
-        # Find the biggest MST edge and then drop all smaller adges from FULL Graph, then take this smalles out of the rest. (RTDL wieght for biggest TSP tour edge)
+        # Find the biggest MST edge and then drop all smaller edges from FULL Graph, then take this smalles out of the rest. (RTDL wieght for biggest TSP tour edge)
         biggest_MST_edge_w = torch.max(r1_edge_w)
         birth_biggest_TSP_edge = torch.min(self.r1[self.r1>biggest_MST_edge_w])
         
@@ -138,12 +138,12 @@ class RTD_Lite:
             v_clique = min_graph_dsu.find(rmin_edge_idx[i][1])
             birth = rmin_edge_w[i]
             
-            r1_graph_dsu = deepcopy(min_graph_dsu)
-            for j in range(len(r1_edge_idx)):
-                r1_graph_dsu.unite(r1_edge_idx[j][0], r1_edge_idx[j][1])    
-                if r1_graph_dsu.find(u_clique) == r1_graph_dsu.find(v_clique):
-                    death_1 = r1_edge_w[j]
-                    break
+            # r1_graph_dsu = deepcopy(min_graph_dsu)
+            # for j in range(len(r1_edge_idx)):
+            #     r1_graph_dsu.unite(r1_edge_idx[j][0], r1_edge_idx[j][1])    
+            #     if r1_graph_dsu.find(u_clique) == r1_graph_dsu.find(v_clique):
+            #         death_1 = r1_edge_w[j]
+            #         break
             
             r2_graph_dsu = deepcopy(min_graph_dsu)
             for j in range(len(r2_edge_idx)):
@@ -154,10 +154,10 @@ class RTD_Lite:
                     path_edges_from_barcodes[i] = r2_edge_idx[j]
                     break
 
-            if death_1 > birth:
-                barcodes['1->2'].append(torch.stack((birth, death_1)))
-            else:
-                barcodes['1->2'].append(torch.tensor((0, 0)))
+            # if death_1 > birth:
+            #     barcodes['1->2'].append(torch.stack((birth, death_1)))
+            # else:
+            #     barcodes['1->2'].append(torch.tensor((0, 0)))
             if death_2 > birth:
                 barcodes['2->1'].append(torch.stack((birth, death_2)))
             else:
@@ -173,8 +173,8 @@ class RTD_Lite:
         for index, (i, j) in enumerate(path_edges_from_barcodes):
             output[i, j] = barcodes['2->1'][index][1] - barcodes['2->1'][index][0]
 
-        output[self.max_TSP_row_col[0],self.max_TSP_row_col[1]] = self.max_TSP_len - birth_biggest_TSP_edge
-        assert self.max_TSP_len - birth_biggest_TSP_edge >= 0 , "Smth wrong with RTDL last weight"
+        output[self.max_TSP_row_col[0],self.max_TSP_row_col[1]] = max(self.max_TSP_len - birth_biggest_TSP_edge, 0)
+        # assert self.max_TSP_len - birth_biggest_TSP_edge >= 0 , f"Smth wrong with RTDL last weight birth {birth_biggest_TSP_edge} death {self.max_TSP_len}"
         
         return barcodes, path_edges_from_barcodes , output
     

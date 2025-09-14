@@ -96,7 +96,7 @@ def masked_dist_matrix(edges: torch.Tensor, distmatrix: torch.Tensor) -> torch.T
     return masked
 
 
-def optimize_D_1tree(Din, lr, n_iter=10 ** 5):
+def optimize_D_1tree(Din, lr, n_iter=10 ** 3):
     """Optimize distance matrix for 1-tree construction.
 
     Parameters

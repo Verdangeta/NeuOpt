@@ -623,8 +623,9 @@ def train_batch(
                     
             if rank == 0:
                 decoder = agent.actor.module.decoder if hasattr(agent.actor, 'module') else agent.actor.decoder
-                pbar.set_postfix(geo_weight=f"{decoder.geo_weight.item():.4f}")
                 pbar.update(1)
+                pbar.set_postfix(geo_weight=f"{decoder.geo_weight.item():.4f}")
+                # pbar.update(1)
 
         # end update
         memory.clear_memory()

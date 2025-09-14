@@ -38,7 +38,8 @@ class Actor(nn.Module):
                  with_RTDL,
                  geo_weight=5.0,
                  use_1tree_opt=False,
-                 normalize_curr_dist=True
+                 normalize_curr_dist=True,
+                 trainable_geo_weight=False
                  ):
         super(Actor, self).__init__()
 
@@ -58,6 +59,7 @@ class Actor(nn.Module):
         self.with_RTDL = with_RTDL
         self.use_1tree_opt = use_1tree_opt
         self.normalize_curr_dist = normalize_curr_dist
+        self.trainable_geo_weight = trainable_geo_weight
         
         if problem_name == 'tsp':
             self.node_dim = 2
@@ -94,7 +96,8 @@ class Actor(nn.Module):
                                     with_feature3 = self.with_feature3,
                                     simpleMDP = self.with_simpleMDP,
                                     geo_weight = geo_weight,
-                                    normalize_curr_dist = self.normalize_curr_dist
+                                    normalize_curr_dist = self.normalize_curr_dist,
+                                    trainable_geo_weight = self.trainable_geo_weight
                                     )
 
         print('# params in Actor', self.get_parameter_number())

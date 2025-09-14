@@ -7,7 +7,7 @@ import numpy as np
 from utils.logger import log_to_screen, log_to_tb_val
 import torch.distributed as dist
 from torch.utils.data import DataLoader
-from tensorboard_logger import Logger as TbLogger
+from torch.utils.tensorboard import SummaryWriter as TbLogger
     
 def gather_tensor_and_concat(tensor):
     gather_t = [torch.ones_like(tensor) for _ in range(dist.get_world_size())]

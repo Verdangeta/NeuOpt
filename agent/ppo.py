@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 import torch.multiprocessing as mp
 import torch.distributed as dist
-from tensorboard_logger import Logger as TbLogger
+from torch.utils.tensorboard import SummaryWriter as TbLogger
 import numpy as np
 import random
 

@@ -311,7 +311,8 @@ class kopt_Decoder(nn.Module):
             with_RNN = True,
             with_feature3 = True,
             simpleMDP = False,
-            geo_weight = 5.0
+            geo_weight = 5.0,
+            normalize_curr_dist = True
     ):
         super(kopt_Decoder, self).__init__()
         self.n_heads = n_heads
@@ -322,6 +323,7 @@ class kopt_Decoder(nn.Module):
         self.with_RNN = with_RNN
         self.with_feature3 = with_feature3
         self.simpleMDP = simpleMDP
+        self.normalize_curr_dist = normalize_curr_dist
         # self.geo_weight = nn.Parameter(torch.tensor(float(geo_weight)))
         self.geo_weight = torch.tensor(geo_weight)
         print('simpleMDP: ', self.simpleMDP)
@@ -414,6 +416,11 @@ class kopt_Decoder(nn.Module):
                   # solution instead of the edge entering it from the previously
                   # selected node.
                   curr_dist = edge_len.gather(2, rec.unsqueeze(-1)).squeeze(-1)
+                  if self.normalize_curr_dist:
+                      min_val = curr_dist.min(dim=1, keepdim=True)[0]
+                      max_val = curr_dist.max(dim=1, keepdim=True)[0]
+                      denom = (max_val - min_val).clamp(min=1e-9)
+                      curr_dist = (curr_dist - min_val) / denom
                   result = result + self.geo_weight * curr_dist
                   # print("Sizes of vectors:","MU:",mu_term,"lambda:", lambda_term,"RTDL:", self.geo_weight * curr_dist, sep = "\n")
               

@@ -93,6 +93,7 @@ You can resume a training by adding the --resume option:
 ```
 The Tensorboard logs will be saved to folder "logs" and the trained model (checkpoint) will be saved to folder "outputs".
 Tensorboard now records the decoder's `geo_weight` as `train/geo_weight` for each mini-step.
+Use `--trainable_geo_weight` to make this weight learnable during training; omit the flag to keep it fixed.
 
 ## Inference
 Load the model and specify the following hyper-parameters for inference:

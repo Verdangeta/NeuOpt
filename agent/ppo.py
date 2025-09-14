@@ -63,6 +63,7 @@ class PPO:
             with_simpleMDP = opts.wo_MDP,
             with_RTDL = not opts.wo_RTDL,
             geo_weight = opts.geo_weight,
+            trainable_geo_weight = opts.trainable_geo_weight,
             use_1tree_opt = opts.use_1tree_opt
         )
         
@@ -284,7 +285,7 @@ def train(rank, problem, agent, val_dataset, tb_logger):
             else:
                 new_weight = opts.geo_weight_min
             decoder = agent.actor.module.decoder if hasattr(agent.actor, 'module') else agent.actor.decoder
-            decoder.geo_weight = torch.tensor(new_weight, device=decoder.geo_weight.device)
+            decoder.geo_weight.data.fill_(new_weight)
 
         # Training mode
         if rank == 0:

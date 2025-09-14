@@ -63,7 +63,8 @@ class PPO:
             with_simpleMDP = opts.wo_MDP,
             with_RTDL = not opts.wo_RTDL,
             geo_weight = opts.geo_weight,
-            use_1tree_opt = opts.use_1tree_opt
+            use_1tree_opt = opts.use_1tree_opt,
+            normalize_curr_dist = not opts.no_curr_dist_norm
         )
         
         if not opts.eval_only:

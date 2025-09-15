@@ -77,6 +77,10 @@ def get_options(args=None):
                         help='Final value for geo_weight after annealing')
     parser.add_argument('--geo_weight_anneal_epochs', type=int, default=0,
                         help='Number of epochs over which to anneal geo_weight (0 disables annealing)')
+    parser.add_argument('--trainable_geo_weight', action='store_true',
+                        help='Make decoder geo_weight a learnable parameter and disable annealing')
+    parser.add_argument('--no_curr_dist_norm', action='store_true',
+                        help='Disable normalization of curr_dist before applying geo_weight')
     
     ### logs to tensorboard and screen
     parser.add_argument('--no_progress_bar', action='store_true', help='Disable progress bar')

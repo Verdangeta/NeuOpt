@@ -63,7 +63,9 @@ class PPO:
             with_simpleMDP = opts.wo_MDP,
             with_RTDL = not opts.wo_RTDL,
             geo_weight = opts.geo_weight,
-            use_1tree_opt = opts.use_1tree_opt
+            use_1tree_opt = opts.use_1tree_opt,
+            normalize_curr_dist = not opts.no_curr_dist_norm,
+            trainable_geo_weight = opts.trainable_geo_weight
         )
         
         if not opts.eval_only:
@@ -273,8 +275,8 @@ def train(rank, problem, agent, val_dataset, tb_logger):
 
         agent.lr_scheduler.step(epoch)
 
-        # Anneal geo_weight if configured
-        if opts.geo_weight_anneal_epochs > 0:
+        # Anneal geo_weight if configured and not trainable
+        if (not opts.trainable_geo_weight) and opts.geo_weight_anneal_epochs > 0:
             if epoch < opts.geo_weight_anneal_epochs:
                 if opts.geo_weight_anneal_epochs > 1:
                     ratio = epoch / (opts.geo_weight_anneal_epochs - 1)
@@ -284,7 +286,7 @@ def train(rank, problem, agent, val_dataset, tb_logger):
             else:
                 new_weight = opts.geo_weight_min
             decoder = agent.actor.module.decoder if hasattr(agent.actor, 'module') else agent.actor.decoder
-            decoder.geo_weight = torch.tensor(new_weight, device=decoder.geo_weight.device)
+            decoder.geo_weight.data.fill_(new_weight)
 
         # Training mode
         if rank == 0:
@@ -623,8 +625,9 @@ def train_batch(
                     
             if rank == 0:
                 decoder = agent.actor.module.decoder if hasattr(agent.actor, 'module') else agent.actor.decoder
-                pbar.set_postfix(geo_weight=f"{decoder.geo_weight.item():.4f}")
                 pbar.update(1)
+                pbar.set_postfix(geo_weight=f"{decoder.geo_weight.item():.4f}")
+                # pbar.update(1)
 
         # end update
         memory.clear_memory()

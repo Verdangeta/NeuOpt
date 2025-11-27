@@ -172,6 +172,7 @@ class RTD_Lite:
         output = torch.zeros_like(self.r1).to(self.device)
         for index, (i, j) in enumerate(path_edges_from_barcodes):
             output[i, j] = barcodes['2->1'][index][1] - barcodes['2->1'][index][0]
+            output[j, i] = barcodes['2->1'][index][1] - barcodes['2->1'][index][0]
 
         output[self.max_TSP_row_col[0],self.max_TSP_row_col[1]] = max(self.max_TSP_len - birth_biggest_TSP_edge, 0)
         # assert self.max_TSP_len - birth_biggest_TSP_edge >= 0 , f"Smth wrong with RTDL last weight birth {birth_biggest_TSP_edge} death {self.max_TSP_len}"
